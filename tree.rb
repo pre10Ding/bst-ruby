@@ -79,22 +79,62 @@ class Tree
   end
 
   # root second
-  def inorder; end
+  def inorder(node = @root, result = [])
+    return if node.nil?
+
+    inorder(node.left, result)
+    result << node.value
+    inorder(node.right, result)
+
+    result
+  end
 
   # root first
-  def preorder; end
+  def preorder(node = @root, result = [])
+    return if node.nil?
+
+    result << node.value
+    preorder(node.left, result)
+    preorder(node.right, result)
+
+    result
+  end
 
   # root last
-  def postorder; end
+  def postorder(node = @root, result = [])
+    return if node.nil?
 
-  def height; end
+    postorder(node.left, result)
+    postorder(node.right, result)
+    result << node.value
 
-  def depth; end
+    result
+  end
 
-  def balanced?; end
+  # if tree has just root, then height is 1
+  def height(node = @root)
+    return 0 if node.nil?
 
-  def rebalance; end
+    1 + [height(node.left), height(node.right)].max
+  end
 
+  def depth(given_node, current_node = @root)
+    return -1 if current_node.nil?
+    return 1 if current_node.value.eql?(given_node.value)
+
+    direction = current_node.value > given_node.value ? 'left' : 'right'
+
+    1 + depth(given_node, (current_node.send direction.to_sym))
+  end
+
+  def balanced?(current_node = @root)
+    balanced_helper(current_node) != -2
+  end
+
+  def rebalance
+    arr = cleanse_array(level_order)
+    @root = build_tree(arr, 0, arr.length - 1)
+  end
 
   # pretty_print code from
   # https://www.theodinproject.com/courses/ruby-programming/lessons/binary-search-trees
@@ -107,15 +147,12 @@ class Tree
   private
 
   def cleanse_array(arr)
-    p arr.uniq.sort
+    arr.uniq.sort
   end
 
   def delete_root
-    # call delete helper but also update @root
-    # need to make a fake parent for root
-    # make new node whose left points to @root, give this to delete as 'parent' param
-    # update @root with the fake parent's left
-    fake_parent = Node.new(nil, nil, @root)
+    # update @root with the fake parent's right
+    fake_parent = Node.new(nil, nil, @root) # to satisfy delete_helper
     delete_helper(fake_parent, fake_parent.right, 'right')
     @root = fake_parent.right
   end
@@ -156,39 +193,82 @@ class Tree
     delete_helper(parent, replacement, direction)
     # delete_with_one_child this node, then set target.value = node.value
   end
+
+  def balanced_helper(current_node)
+    return 0 if current_node.nil?
+
+    left_child = balanced_helper(current_node.left)
+    right_child = balanced_helper(current_node.right)
+    return -2 if left_child == -2 || right_child == -2 || (left_child - right_child).abs > 1
+
+    1 + (left_child > right_child ? left_child : right_child)
+  end
 end
 
-tree = Tree.new([10, 1, 1, 1, 1, 1, 1, 4, 6, 8, 11, 20, 9])
-tree.pretty_print
-puts tree
-tree.insert(15)
-tree.pretty_print
-puts tree
-tree.insert(15)
-tree.pretty_print
-puts tree
-tree.insert(7)
-tree.pretty_print
-puts tree
-tree.insert(7)
-tree.pretty_print
-p tree.level_order
-puts tree
-puts 'DELETING LEAF NODE 1'
-tree.delete(1) # deleting leaf
-tree.pretty_print
-puts 'DELETING NODE WITH ONE CHILD 20'
-tree.delete(20) # deleting node w 1 child
-tree.pretty_print
-puts 'DELETING INVALID NODE 20'
-tree.delete(20) # deleting invalid node
-tree.pretty_print
-puts 'DELETING NODE WITH TWO CHILDREN 10'
-tree.delete(10) # deleting node w 2 child
-tree.pretty_print
-puts 'DELETING ROOT NODE WITH TWO CHILDREN 8'
-tree.delete(8) # deleting root
-tree.pretty_print
-p tree.pretty_print(tree.find(11))
-p tree.pretty_print(tree.find(9))
-p tree.level_order
+driver_tree = Tree.new(Array.new(15) { rand(1..100) })
+driver_tree.pretty_print
+p driver_tree.balanced?
+p driver_tree.level_order
+p driver_tree.preorder
+p driver_tree.postorder
+p driver_tree.inorder
+Array.new(5) { rand(101..1000) }.each { |num| driver_tree.insert(num) }
+driver_tree.pretty_print
+p driver_tree.balanced?
+driver_tree.rebalance
+driver_tree.pretty_print
+p driver_tree.balanced?
+p driver_tree.level_order
+p driver_tree.preorder
+p driver_tree.postorder
+p driver_tree.inorder
+
+#
+#
+#
+#
+# tree = Tree.new([10, 1, 1, 1, 1, 1, 1, 4, 6, 8, 11, 20, 9])
+# tree.pretty_print
+# puts tree
+# p tree.balanced?
+# tree.insert(15)
+# tree.pretty_print
+# puts tree
+# p tree.balanced?
+# tree.insert(15)
+# tree.pretty_print
+# puts tree
+# tree.insert(7)
+# tree.pretty_print
+# puts tree
+# tree.insert(7)
+# tree.pretty_print
+# p tree.level_order
+# puts tree
+# puts 'DELETING LEAF NODE 1'
+# tree.delete(1) # deleting leaf
+# tree.pretty_print
+# puts 'DELETING NODE WITH ONE CHILD 20'
+# tree.delete(20) # deleting node w 1 child
+# tree.pretty_print
+# puts 'DELETING INVALID NODE 20'
+# tree.delete(20) # deleting invalid node
+# tree.pretty_print
+# puts 'DELETING NODE WITH TWO CHILDREN 10'
+# tree.delete(10) # deleting node w 2 child
+# tree.pretty_print
+# puts 'DELETING ROOT NODE WITH TWO CHILDREN 8'
+# tree.delete(8) # deleting root
+# tree.pretty_print
+# p tree.pretty_print(tree.find(11))
+# p tree.pretty_print(tree.find(9))
+# p tree.level_order
+# p tree.inorder
+# p tree.preorder
+# p tree.postorder
+# p tree.height
+# p tree.depth(Node.new(6))
+# p tree.balanced?
+# tree.rebalance
+# p tree
+# tree.pretty_print
